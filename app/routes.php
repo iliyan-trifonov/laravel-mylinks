@@ -218,7 +218,16 @@ Route::post("/register", function () {
     return Redirect::route("home");
 });
 
-Route::get("/search", function () {
+Route::get("/search", ["as" => "search", function () {
+    $rules = ["search" => "required|min:3"];
+
+    $valid = Validator::make(Input::all(), $rules);
+
+    if ($valid->fails()) {
+        return Redirect::back()
+            ->with("errors", $valid->messages()->all());
+    }
+
     return View::make("links.index")
         ->with("search", Input::get("search"))
         ->with("links", Auth::user()
@@ -228,7 +237,7 @@ Route::get("/search", function () {
                     ->orWhere("url", "LIKE", "%" . Input::get("search") . "%");
             })
             ->paginate(5));
-});
+}]);
 
 Route::get("/profile", ["as" => "profile", function(){
     return View::make("links.profile")

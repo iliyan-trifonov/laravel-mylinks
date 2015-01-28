@@ -9,6 +9,20 @@
         <div class="container">
 
             <div class="page-header">
+
+                <div class="pull-left">
+                    <strong>
+                        My Links ::
+                        @if(Route::is("search"))
+                            Search
+                        @elseif(Route::is("profile"))
+                            Profile
+                        @else
+                            Home
+                        @endif
+                    </strong>
+                </div>
+
                 @if (Auth::check())
                     @include('links.header_member')
                 @else
