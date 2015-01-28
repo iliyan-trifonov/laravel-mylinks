@@ -2,9 +2,11 @@
     <div class="col-lg-12">
         {{ Form::open(["url" => "/"]) }}
         <div class="input-group input-group-lg">
-            <input type="text" name="url" class="form-control input-lg" placeholder="http://www.sitename.com/pagename">
+            {{ Form::text("url", null,
+                ["class" => "form-control input-lg",
+                "placeholder" => "http://www.sitename.com/pagename"]) }}
             <span class="input-group-btn">
-                <button class="btn btn-default btn-lg" type="submit">Add</button>
+                {{ Form::submit("Add", ["class" => "btn btn-default btn-lg"]) }}
             </span>
         </div>
         {{ Form::close() }}

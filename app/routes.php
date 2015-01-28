@@ -165,7 +165,7 @@ Route::post('/login', function () {
 Route::get("/links/{id}/delete", function ($id) {
     return View::make("links.delete")
         ->with("link", Auth::user()->links()->find($id));
-});
+})->where("id", '[\d]+');
 
 Route::delete("/links/{id}/delete", function ($id) {
     $link = Auth::user()->links()->find($id);
@@ -173,7 +173,7 @@ Route::delete("/links/{id}/delete", function ($id) {
     $link->delete();
     return Redirect::route("home")
         ->with("success", "Link <i>$url</i> deleted successfully!");
-});
+})->where("id", '[\d]+');
 
 Route::get("/logout", function () {
     Auth::logout();
