@@ -19,7 +19,7 @@ Route::get('/', ['as' => 'home', function () {
                 Auth::user()
                     ->links()
                     ->orderBy("id", "DESC")
-                    ->paginate(5)
+                    ->paginate(20)
             )
             ->with("search", "");
     } else {
@@ -236,7 +236,7 @@ Route::get("/search", ["as" => "search", function () {
                 $query->where("title", "LIKE", "%" . Input::get("search") . "%")
                     ->orWhere("url", "LIKE", "%" . Input::get("search") . "%");
             })
-            ->paginate(5));
+            ->paginate(20));
 }]);
 
 Route::get("/profile", ["as" => "profile", function(){
