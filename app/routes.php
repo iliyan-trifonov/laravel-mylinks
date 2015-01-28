@@ -229,3 +229,43 @@ Route::get("/search", function () {
             })
             ->paginate(5));
 });
+
+Route::get("/profile", ["as" => "profile", function(){
+    return View::make("links.profile")
+        ->with("user", Auth::user());
+}]);
+
+Route::post("/profile", function(){
+    $rules = [
+        "username" => "required|min:4",
+        "password" => "required|min:4:confirmed",
+        "email" => "required|email"
+    ];
+
+    $checkPass = Input::has("password") || Input::has("password_confirmation");
+
+    if (!$checkPass) {
+        unset($rules["password"]);
+    }
+
+    $valid = Validator::make(Input::all(), $rules);
+
+    if ($valid->fails()) {
+        return Redirect::back()
+            ->withInput()
+            ->with("errors", $valid->messages()->all());
+    }
+
+    $user = Auth::user();
+
+    $user->username = Input::get("username");
+    if ($checkPass) {
+        $user->password = Hash::make(Input::get("password"));
+    }
+    $user->email = Input::get("email");
+
+    $user->save();
+
+    return Redirect::route("profile")
+        ->with("success", "User information updated successfully!");
+});
