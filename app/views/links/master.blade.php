@@ -17,6 +17,10 @@
                             Search
                         @elseif(Route::is("profile"))
                             Profile
+                        @elseif(Route::is("login"))
+                            Login
+                        @elseif(Route::is("register"))
+                            Register
                         @else
                             Home
                         @endif

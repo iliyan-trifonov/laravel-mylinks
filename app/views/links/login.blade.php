@@ -5,7 +5,7 @@
         {{ Form::open() }}
             <div class="form-group">
                 {{ Form::label("email", "Email") }}
-                {{ Form::text("email", null, ["class" => "form-control", "placeholder" => "email"]) }}
+                {{ Form::email("email", null, ["class" => "form-control", "placeholder" => "user@domain.com"]) }}
             </div>
             <div class="form-group">
                 {{ Form::label("password", "Password") }}
