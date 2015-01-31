@@ -123,6 +123,7 @@ return array(
 		'Illuminate\Workbench\WorkbenchServiceProvider',
 		'Yangqi\Htmldom\HtmldomServiceProvider',
 		'Barryvdh\Debugbar\ServiceProvider',
+		'Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider',
 
 	),
 
