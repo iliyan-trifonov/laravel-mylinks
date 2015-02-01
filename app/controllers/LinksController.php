@@ -4,7 +4,7 @@ class LinksController extends BaseController
 {
 
     protected $rules = [
-        "url" => ['url' => "required|url|active_url|unique:links"],
+        "url" => ['url' => "required|url|unique:links"],
         'icon_url' => ['url' => 'required|url'],
         "search" => ['search' => "required|min:3"]
     ];
