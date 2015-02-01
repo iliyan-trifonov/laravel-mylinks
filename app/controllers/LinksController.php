@@ -121,22 +121,19 @@ class LinksController extends BaseController
                 }
             }
 
-            if (!$valid = Validator::make(['url' => $icon_url], $this->rules['icon_url'])) {
-                return ['error', $valid->messages()->first()];
-            }
-
-            $curl = $this->getCurlData($icon_url);
-            if (isset($curl['error'])) {
-                return ['error' => $curl['error']];
-            }
-            if (!$curl['info']
-                || $curl['info']['http_code'] !== 200
-                || !$curl['info']['size_download']
-            ) {
+            $valid = Validator::make(['url' => $icon_url], $this->rules['icon_url']);
+            if ($valid->fails()) {
                 $icon_url = null;
             } else {
-                $icon_url = $curl['info']['url'];
-            }
+	            $curl = $this->getCurlData($icon_url);
+	            if (!isset($curl['error'])
+	            	&& false !== $curl['info']
+	                && 200 === $curl['info']['http_code']
+	                && $curl['info']['size_download'] > 0
+	            ) {
+	                $icon_url = $curl['info']['url'];
+	            }
+	        }
         }
 
         return [
