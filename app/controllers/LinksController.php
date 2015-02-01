@@ -5,6 +5,7 @@ class LinksController extends BaseController
 
     protected $rules = [
         "url" => ['url' => "required|url|active_url|unique:links"],
+        'icon_url' => ['url' => 'required|url'],
         "search" => ['search' => "required|min:3"]
     ];
     protected $itemsPerPage = 20;
@@ -120,7 +121,7 @@ class LinksController extends BaseController
                 }
             }
 
-            if (!$valid = Validator::make($curl['info']['url'], $this->rules['url'])) {
+            if (!$valid = Validator::make(['url' => $icon_url], $this->rules['icon_url'])) {
                 return ['error', $valid->messages()->first()];
             }
 
