@@ -9,9 +9,9 @@ class UserController extends BaseController
             "password" => "required"
         ],
         'register' => [
-            "username" => "required|min:4",
+            "username" => "required|min:4|unique:users",
             "password" => "required|min:4|confirmed",
-            "email" => "required|email"
+            "email" => "required|email|unique:users"
         ]
     ];
 
@@ -98,6 +98,14 @@ class UserController extends BaseController
 
         if (!$checkPass) {
             unset($rules["password"]);
+        }
+
+        if (Input::has('username') && Auth::user()->username === Input::get('username')) {
+            unset($rules['username']);
+        }
+
+        if (Input::has('email') && Auth::user()->email === Input::get('email')) {
+            unset($rules['email']);
         }
 
         $valid = Validator::make(Input::all(), $rules);

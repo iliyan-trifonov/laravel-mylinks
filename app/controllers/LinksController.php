@@ -4,7 +4,7 @@ class LinksController extends BaseController
 {
 
     protected $rules = [
-        "url" => ['url' => "required|url"],
+        "url" => ['url' => "required|url|active_url|unique:links"],
         "search" => ['search' => "required|min:3"]
     ];
     protected $itemsPerPage = 20;
@@ -46,6 +46,11 @@ class LinksController extends BaseController
 
         $data = $this->getTitleAndIcon($link->url);
 
+        if (isset($data['error'])) {
+            return Redirect::back()
+                ->with('error', $data['error']);
+        }
+
         $link->title = $data['title'];
         $link->icon_url = $data['icon_url'];
 
@@ -76,6 +81,10 @@ class LinksController extends BaseController
         try {
             $curl = $this->getCurlData($url);
 
+            if (isset($curl['error'])) {
+                return ['error' => $curl['error']];
+            }
+
             $html = new Htmldom();
             $html->load($curl['result']);
 
@@ -92,10 +101,8 @@ class LinksController extends BaseController
             } else {
                 $icon_url = $protocol . "://" . $domain . "/favicon.ico";
             }
-        } catch (ErrorException $exception) {
-            return Redirect::back()
-                ->withInput()
-                ->with("error", $exception->getMessage());
+        } catch (Exception $exception) {
+            return ['error' => $exception->getMessage()];
         }
 
         if (isset($icon_url)) {
@@ -112,8 +119,19 @@ class LinksController extends BaseController
                     $icon_url = "http:" . $icon_url;
                 }
             }
+
+            if (!$valid = Validator::make($curl['info']['url'], $this->rules['url'])) {
+                return ['error', $valid->messages()->first()];
+            }
+
             $curl = $this->getCurlData($icon_url);
-            if (!$curl['info'] || $curl['info']['http_code'] !== 200 || !$curl['info']['size_download']) {
+            if (isset($curl['error'])) {
+                return ['error' => $curl['error']];
+            }
+            if (!$curl['info']
+                || $curl['info']['http_code'] !== 200
+                || !$curl['info']['size_download']
+            ) {
                 $icon_url = null;
             } else {
                 $icon_url = $curl['info']['url'];
@@ -137,6 +155,9 @@ class LinksController extends BaseController
         $agent = $_SERVER['HTTP_USER_AGENT'];
         curl_setopt($curl, CURLOPT_USERAGENT, $agent);
         $result = curl_exec($curl);
+        if (false === $result) {
+            return ['error' => curl_error($curl)];
+        }
         $info = curl_getinfo($curl);
         curl_close($curl);
         return [
