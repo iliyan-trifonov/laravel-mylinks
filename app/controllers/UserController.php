@@ -1,20 +1,17 @@
 <?php
 
-class UserController extends BaseController
+namespace MyLinks\Controllers;
+
+use Auth;
+use Hash;
+use Input;
+use Redirect;
+use Validator;
+use View;
+use MyLinks\Models\User as User;
+
+class UserController extends \BaseController
 {
-
-    protected $rules = [
-        'login' => [
-            "email" => "email|required",
-            "password" => "required"
-        ],
-        'register' => [
-            "username" => "required|min:4|unique:users",
-            "password" => "required|min:4|confirmed",
-            "email" => "required|email|unique:users"
-        ]
-    ];
-
     public function showLogin()
     {
         return View::make('links.login');
@@ -22,24 +19,27 @@ class UserController extends BaseController
 
     public function postLogin()
     {
-        $valid = Validator::make(Input::all(), $this->rules['login']);
 
-        if ($valid->fails()) {
+        $credentials = Input::only('email', 'password');
+
+        $user = new User($credentials);
+
+        if (!$user->validate($credentials, 'login')) {
             return Redirect::back()
                 ->withInput()
-                ->with("errors", $valid->messages()->all());
+                ->with("errors", $user->getMessages());
         }
 
-        if (!Auth::attempt(Input::only("email", "password"))) {
+        if (!Auth::attempt($credentials)) {
             return Redirect::back()
                 ->withInput()
                 ->with("error", "Invalid email or password!");
         }
 
-        return Redirect::to("/")
+        return Redirect::route("home")
             ->with(
                 "success",
-                "User <i>".Auth::user()->username."</i> successfully logged in!"
+                "User ".Auth::user()->username." successfully logged in!"
             );
     }
 
@@ -56,80 +56,48 @@ class UserController extends BaseController
 
     public function register()
     {
-        $valid = Validator::make(Input::all(), $this->rules['register']);
 
-        if ($valid->fails()) {
+        $credentials = Input::all();
+
+        $user = new User($credentials);
+
+        if (!$user->validate($credentials, 'register')) {
             return Redirect::back()
                 ->withInput()
-                ->with("errors", $valid->messages()->all());
+                ->with("errors", $user->getMessages());
         }
 
-        if (!User::where("username", Input::get("username"))
-            ->orWhere("email", Input::get("email"))->get()->isEmpty()
-        ) {
-            return Redirect::back()
-                ->withInput()
-                ->with("error", "Username or email already exists!");
-        }
-
-        $user = User::create([
-            "username" => Input::get("username"),
-            "password" => Hash::make(Input::get("password")),
-            "email" => Input::get("email")
-        ]);
+        $user->save();
 
         Auth::login($user);
 
-        return Redirect::route("home");
+        return Redirect::route("home")
+            ->with(
+                'success',
+                'User ' . $user->username . ' registered successfully!'
+            );
     }
 
     public function showProfile()
     {
-        return View::make("links.profile")
-            ->with("user", Auth::user());
+        return View::make('links.profile')
+            ->with('user', Auth::user());
     }
 
     public function updateProfile()
     {
-
-        $rules = $this->rules['register'];
-
-        $checkPass = Input::has("password") || Input::has("password_confirmation");
-
-        if (!$checkPass) {
-            unset($rules["password"]);
-        }
-
-        if (Input::has('username') && Auth::user()->username === Input::get('username')) {
-            unset($rules['username']);
-        }
-
-        if (Input::has('email') && Auth::user()->email === Input::get('email')) {
-            unset($rules['email']);
-        }
-
-        $valid = Validator::make(Input::all(), $rules);
-
-        if ($valid->fails()) {
-            return Redirect::back()
-                ->withInput()
-                ->with("errors", $valid->messages()->all());
-        }
-
         $user = Auth::user();
 
-        $user->username = Input::get("username");
-        if ($checkPass) {
-            $user->password = Hash::make(Input::get("password"));
+        if ( ! $user->validateProfileAndUpdate(Input::all())) {
+            return Redirect::back()
+                ->withInput()
+                ->with('errors', $user->getMessages());
         }
-        $user->email = Input::get("email");
 
-        $user->save();
-
-        return Redirect::route("profile")
+        return Redirect::route('profile')
             ->with(
-                "success",
-                "User information updated successfully!"
+                'success',
+                'User information updated successfully!'
             );
     }
 }

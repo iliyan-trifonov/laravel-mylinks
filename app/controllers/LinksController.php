@@ -1,11 +1,21 @@
 <?php
 
-class LinksController extends BaseController
+namespace MyLinks\Controllers;
+
+use Auth;
+use Htmldom;
+use Input;
+use Redirect;
+use Symfony\Component\Console\Input\InputOption;
+use Validator;
+use View;
+use MyLinks\Models\Link;
+use MyLinks\Libs\HtmlParser;
+
+class LinksController extends \BaseController
 {
 
     protected $rules = [
-        "url" => ['url' => "required|url|unique:links"],
-        'icon_url' => ['url' => 'required|url'],
         "search" => ['search' => "required|min:3"]
     ];
     protected $itemsPerPage = 20;
@@ -26,32 +36,32 @@ class LinksController extends BaseController
 
     public function addLink()
     {
-        $valid = Validator::make(Input::all(), $this->rules['url']);
-
-        if ($valid->fails()) {
-            return Redirect::back()
-                ->withInput()
-                ->with("errors", $valid->messages()->all());
-        }
-
-        $url = Input::get("url");
-        if ($this->linkExists($url)) {
-            return Redirect::back()
-                ->withInput()
-                ->with("error", "Url <i>$url</i> already exists!");
-        }
-
         $link = new Link([
-            "url" => Input::get("url")
+            'url' => Input::get('url')
         ]);
 
-        $data = $this->getTitleAndIcon($link->url);
-
-        if (isset($data['error'])) {
+        if (!$link->validate(Input::all(), 'url')) {
             return Redirect::back()
-                ->with('error', $data['error']);
+                ->withInput()
+                ->with("errors", $link->getMessages());
         }
 
+        if ($this->userLinkExists($link->url)) {
+            return Redirect::back()
+                ->withInput()
+                ->with('error', 'Url ' . $link->url . ' already added!');
+        }
+
+        $parser = new HtmlParser();
+        $data = $parser->getTitleAndIcon($link->url);
+
+        if (!$data) {
+            return Redirect::back()
+                ->withInput()
+                ->with('errors', $parser->getMessages());
+        }
+
+        $link->url = $data['url'];
         $link->title = $data['title'];
         $link->icon_url = $data['icon_url'];
 
@@ -60,7 +70,7 @@ class LinksController extends BaseController
         $link->save();
 
         return Redirect::route("home")
-            ->with("success", "Url <i>$url</i> added successfully!");
+            ->with("success", "Url ".$link->url." added successfully!");
     }
 
     protected function getLinks($search = null)
@@ -77,123 +87,6 @@ class LinksController extends BaseController
             ->paginate($this->itemsPerPage);
     }
 
-    protected function getTitleAndIcon($url = '')
-    {
-        try {
-            $curl = $this->getCurlData($url);
-
-            if (isset($curl['error'])) {
-                return ['error' => $curl['error']];
-            }
-
-            $html = new Htmldom();
-            $html->load($curl['result']);
-
-            $title = $html->find('title', 0)->innertext;
-
-            $parsed = parse_url($url);
-            $domain = $parsed["host"];
-            $protocol = $parsed["scheme"];
-
-            if ($icon = $html->find("link[rel='icon']", 0)) {
-                $icon_url = $icon->href;
-            } elseif ($icon = $html->find("link[rel='shortcut icon']", 0)) {
-                $icon_url = $icon->href;
-            } else {
-                $icon_url = $protocol . "://" . $domain . "/favicon.ico";
-            }
-        } catch (Exception $exception) {
-            return ['error' => $exception->getMessage()];
-        }
-
-        if (isset($icon_url)) {
-            if (!starts_with($icon_url, "http:")
-                && !starts_with($icon_url, "https:")
-            ) {
-                if (!starts_with($icon_url, "//")) {
-                    if (!strpos($icon_url, $domain)) {
-                        $icon_url = $domain . "/" . $icon_url;
-                        $icon_url = str_replace("//", "/", $icon_url);
-                    }
-                    $icon_url = $protocol . "://" . $icon_url;
-                } else {
-                    $icon_url = "http:" . $icon_url;
-                }
-            }
-
-            $valid = Validator::make(['url' => $icon_url], $this->rules['icon_url']);
-            if ($valid->fails()) {
-                $icon_url = null;
-            } else {
-	            $curl = $this->getCurlData($icon_url);
-	            if (!isset($curl['error'])
-	            	&& false !== $curl['info']
-	                && 200 === $curl['info']['http_code']
-	                && $curl['info']['size_download'] > 0
-	            ) {
-	                $icon_url = $curl['info']['url'];
-	            }
-	        }
-        }
-
-        return [
-            'title' => $title,
-            'icon_url' => $icon_url
-        ];
-    }
-
-    protected function getCurlData($url = "")
-    {
-        $curl = curl_init();
-        curl_setopt($curl, CURLOPT_URL, $url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt($curl, CURLOPT_FOLLOWLOCATION, true);
-        $agent = $_SERVER['HTTP_USER_AGENT'];
-        curl_setopt($curl, CURLOPT_USERAGENT, $agent);
-        $result = curl_exec($curl);
-        if (false === $result) {
-            return ['error' => curl_error($curl)];
-        }
-        $info = curl_getinfo($curl);
-        curl_close($curl);
-        return [
-            'result' => $result,
-            'info' => $info
-        ];
-    }
-
-    protected function linkExists($url = '')
-    {
-        return ! Auth::user()
-            ->links()
-            ->where("url", $url)
-            ->get()
-            ->isEmpty();
-    }
-
-    public function showDeleteLink($id)
-    {
-        return View::make("links.delete")
-            ->with("link",
-                Auth::user()
-                ->links()
-                ->find($id));
-    }
-
-    public function deleteLink($id)
-    {
-        $link = Auth::user()->links()->find($id);
-        $url = $link->url;
-        $link->delete();
-        return Redirect::route("home")
-            ->with(
-                "success",
-                "Link <i>$url</i> deleted successfully!"
-            );
-    }
-
     public function search()
     {
         $valid = Validator::make(Input::all(), $this->rules['search']);
@@ -206,5 +99,33 @@ class LinksController extends BaseController
         return View::make("links.index")
             ->with("search", Input::get("search"))
             ->with("links", $this->getLinks(Input::get("search")));
+    }
+
+    public function showDeleteLink($id)
+    {
+        return View::make("links.delete")
+            ->with("link",
+                Auth::user()
+                    ->links()
+                    ->find($id));
+    }
+
+    public function deleteLink($id)
+    {
+        $link = Auth::user()->links()->find($id);
+        $url = $link->url;
+        $link->delete();
+        return Redirect::route("home")
+            ->with(
+                "success",
+                "Url $url deleted successfully!"
+            );
+    }
+
+    protected function userLinkExists($url)
+    {
+        return Auth::user()
+            ->links()
+            ->where('url', $url)->count() > 0;
     }
 }

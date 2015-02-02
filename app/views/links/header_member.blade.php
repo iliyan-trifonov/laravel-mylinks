@@ -1,5 +1,5 @@
 <div class="text-right">
-    Logged in as {{ Auth::user()->username }}
+    Logged in as {{{ Auth::user()->username }}}
     @if (Route::is("home"))
         <strong>Home</strong>
     @else
