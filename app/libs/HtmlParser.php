@@ -111,6 +111,7 @@ class HtmlParser
             $iconUrl = $props['protocol'] . "://" . $props['domain'] . "/favicon.ico";
         }
 
+        // data:image:base64
         if (starts_with($iconUrl, 'data:')) {
             $iconUrl = null;
         } elseif (starts_with($iconUrl, '//')) {
