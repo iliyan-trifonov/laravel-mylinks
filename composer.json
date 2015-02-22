@@ -1,6 +1,6 @@
 {
-	"name": "laravel/laravel",
-	"description": "The Laravel Framework.",
+	"name": "iliyan/mylinks",
+	"description": "MyLinks",
 	"keywords": ["framework", "laravel"],
 	"license": "MIT",
 	"type": "project",
