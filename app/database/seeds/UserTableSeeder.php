@@ -1,5 +1,7 @@
 <?php
 
+use MyLinks\Models\User;
+
 class UserTableSeeder extends DatabaseSeeder
 {
     public function run()

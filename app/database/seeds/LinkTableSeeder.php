@@ -1,5 +1,8 @@
 <?php
 
+use MyLinks\Models\User;
+use MyLinks\Models\Link;
+
 class LinkTableSeeder extends DatabaseSeeder
 {
     public function run()
