@@ -3,7 +3,7 @@
     <head>
         <meta lang="en" />
         <title>My Links</title>
-        <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" />
+        <link rel="stylesheet" type="text/css" href="{{ asset('css/bootstrap.min.css') }}" />
     </head>
     <body>
         <div class="container">
